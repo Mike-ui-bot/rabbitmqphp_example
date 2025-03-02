@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../RabbitMQ/RabbitMQClient.php';
+require_once __DIR__ . '/../RabbitMQ/RabbitMQLib.inc';
 
 use RabbitMQ\RabbitMQClient;
 
@@ -15,16 +15,16 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $message = json_encode([
         "type" => "login",
         "email" => $email,
-        "password" => $password
+        'password' => $password
     ]);
 
     try {
         // Create RabbitMQ client and send message
-        $client = new RabbitMQClient('RabbitMQ/RabbitMQ.ini', 'Database');
-        $client->publishMessage($message);
-        $client->close();
-
+        $client = new RabbitMQClient(__DIR__ . '/../RabbitMQ/RabbitMQ.ini', 'Database');
+        $response = $client->sendRequest($message);
+        
         echo "Login request sent successfully.";
+        echo $response;
     } catch (Exception $e) {
         echo "Error: " . $e->getMessage();
     }

@@ -1,7 +1,7 @@
 <?php
 session_start();
 
-require_once __DIR__ . '/../RabbitMQ/RabbitMQClient.php'; // Includes php-ampqlib
+require_once(__DIR__ . '/../RabbitMQ/RabbitMQLib.inc'); 
 
 use RabbitMQ\RabbitMQClient;
 
@@ -15,7 +15,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         exit();
     }
 
-    // Prepare data as JSON
+    // Encode message as JSON
     $message = json_encode([
         'type' => "register",
         'email' => $email,
@@ -24,12 +24,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     ]);
 
     try {
-        // Create RabbitMQ client and send message
-        $client = new RabbitMQClient('RabbitMQ/RabbitMQ.ini', 'Database');
-        $client->publishMessage($message);
-        $client->close();
+        // Create RabbitMQ client and send request
+        $client = new RabbitMQClient(__DIR__ . '/../RabbitMQ/RabbitMQ.ini', 'Database');
+        $response = $client->sendRequest($message);
 
-        echo "Registration request sent successfully.";
+        echo "Registration request sent successfully.\n";
+        echo $response;
+
     } catch (Exception $e) {
         echo "Error: " . $e->getMessage();
     }
@@ -68,4 +69,3 @@ function sendConfirmationEmail($email, $username) {
     }
 }
 ?>
-
