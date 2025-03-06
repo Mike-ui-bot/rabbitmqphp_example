@@ -17,7 +17,7 @@ $username = $_SESSION['username'];
     <title>Dashboard</title>
     <script>
         // Fetch user session details from PHP
-        fetch('sendMessage.php')
+        fetch('login.php')
             .then(response => response.json())
             .then(data => {
                 if (data.logged_in) {

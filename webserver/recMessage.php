@@ -9,10 +9,10 @@ require_once('/var/www/rabbitmqphp_example/get_host_info.inc');
 require_once('/var/www/rabbitmqphp_example/rabbitMQLib.inc');
 
 // Database credentials
-$DB_HOST = "localhost";
+$DB_HOST = "25.3.237.152";
 $DB_USER = "tester_user";
 $DB_PASS = "testMe";
-$DB_NAME = "Testdata";
+$DB_NAME = "IT490";
 
 // Connect to MySQL database
 $mysqli = new mysqli($DB_HOST, $DB_USER, $DB_PASS, $DB_NAME);
@@ -26,7 +26,8 @@ if ($mysqli->connect_error) {
 function requestProcessor($request)
 {
     global $mysqli;
-   echo "Received request" . PHP_EOL;
+
+    echo "Received request" . PHP_EOL;
     var_dump($request);
 
     if (!isset($request['type'])) {
@@ -45,7 +46,7 @@ function requestProcessor($request)
             $stmt->bind_param("s", $email);
             $stmt->execute();
             $stmt->store_result();
-
+            
             if ($stmt->num_rows > 0) {
                 $stmt->bind_result($username, $stored_hashed_password);
                 $stmt->fetch();
@@ -78,7 +79,7 @@ function requestProcessor($request)
 }
 
 // Ensure RabbitMQ server is correctly initialized
-$server = new rabbitMQServer('/var/www/rabbitmqphp_example/testRabbitMQ.ini', "testServer");
+$server = new rabbitMQServer("/var/www/rabbitmqphp_example/testRabbitMQ.ini", "testServer");
 
 echo "testRabbitMQServer BEGIN".PHP_EOL;
 $server->process_requests('requestProcessor');

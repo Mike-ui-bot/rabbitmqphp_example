@@ -1,7 +1,7 @@
 <?php
 session_start();
 
-require_once(__DIR__ . '/../rabbitmqphp_example/RabbitMQ/RabbitMQLib.inc');
+require_once(__DIR__ . '/../RabbitMQ/RabbitMQLib.inc');
 
 use RabbitMQ\RabbitMQClient;
 
@@ -22,22 +22,23 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         'type' => "register",
         'email' => $email,
         'username' => $username,
-        'password' => $hashed_password,
+        'password' => $password,
     ]);
 
     try {
         // Create RabbitMQ client and send request
-        $client = new RabbitMQClient(__DIR__ . '/../rabbitmqphp_example/RabbitMQ/RabbitMQ.ini', 'Database');
-        $response = $client->sendRequest($message);
+        $client = new RabbitMQClient(__DIR__ . '/../RabbitMQ/RabbitMQ.ini', 'Database');
+        $response = json_decode($client->sendRequest($message), true);
         
-        if ($response === "success") { // Assuming "success" is returned on successful registration
-echo "<script>
-    alert('Registration was successful! You may now sign in!');
-</script>";
-header("Location: dashboard.php");
-
+        // Handle duplicate emails and usernames
+        if ($response['status'] === "success") { 
+            header("Location: index.html?success=" . urlencode($response['message']));
+        } elseif($response['status'] === "email_error") {
+            header("Location: index.html?error=" . urlencode($response['message']));
+        } elseif ($response['status'] === "username_error") {
+            header("Location: index.html?error=" . urlencode($response['message']));
         } else {
-            echo "<script>alert('Registration failed: " . addslashes($response) . "'); window.history.back();</script>";
+            header("Location: index.html?error=" . urlencode($response['message']));
         }
     } catch (Exception $e) {
         echo "<script>alert('Error: " . addslashes($e->getMessage()) . "'); window.history.back();</script>";

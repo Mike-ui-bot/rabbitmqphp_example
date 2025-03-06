@@ -7,7 +7,7 @@ use PhpAmqpLib\Message\AMQPMessage;
 
 try {
     global $db;
-
+    echo "Trying to connect to RabbitMQ...\n";
     // Initialize RabbitMQServer (using "Database" from RabbitMQ.ini)
     $rbMQs = new RabbitMQServer(__DIR__ . '/../RabbitMQ/RabbitMQ.ini', 'Database');
 
@@ -31,57 +31,57 @@ try {
                 $username = $data['username'];
                 $password = $data['password'];
         
-                // Check if the user already exists (either by email or username)
-                $stmt = $db->prepare("SELECT COUNT(*) FROM users WHERE email = ? OR username = ?");
+                // Check if email or username already exists
+                $stmt = $db->prepare("SELECT email, username FROM users WHERE email = ? OR username = ?");
                 $stmt->bind_param("ss", $email, $username);
                 $stmt->execute();
-                $stmt->bind_result($userCount);
-                $stmt->fetch();
+                $result = $stmt->get_result();
+                $existingUser = $result->fetch_assoc();
                 $stmt->close();
-        
-                if ($userCount > 0) {
-                    echo "Error: User with email '$email' or username '$username' already exists.\n";
-                    $response = ["status" => "error", "message" => "User already exists"];
+
+                if ($existingUser) {
+                    if ($existingUser['email'] === $email) {
+                        echo "Error: Email '$email' is already in use.\n";
+                        $response = ["status" => "email_error", "message" => "Email $email is already in use. Please use a different email."];
+                    } elseif ($existingUser['username'] === $username) {
+                        echo "Error: Username '$username' is already taken.\n";
+                        $response = ["status" => "username_error", "message" => "Username $username is already taken. Please choose another."];
+                    }
                 } else {
-                    // Insert data into database using prepared statements
-                    $stmt = $db->prepare("INSERT INTO users (email, username, password_hash) VALUES (?, ?, ?)");
+                    // Insert data into database
+                    $stmt = $db->prepare("INSERT INTO users (email, username, password) VALUES (?, ?, ?)");
                     $stmt->bind_param("sss", $email, $username, $password);
-        
+
                     if ($stmt->execute()) {
                         echo "User '$username' successfully registered and added to database.\n";
-                        $response = ["status" => "success", "message" => "Registration successful!"];
+                        $response = ["status" => "success", "message" => "Registration successful! Please log in."];
                     } else {
-                        // db error
                         echo "Error: " . $stmt->error . "\n";
                         $response = ["status" => "error", "message" => "Sorry, we were unable to register you at this time."];
-                    }       
+                    }
                     $stmt->close();
                 }
+
             // Login handling
             } elseif ($type === "login") {
                 $email = $data['email'];
                 $password = $data['password'];
         
                 // Verify user credentials
-                $stmt = $db->prepare("SELECT password_hash FROM users WHERE email = ?");
+                $stmt = $db->prepare("SELECT username, password FROM users WHERE email = ?");
                 $stmt->bind_param("s", $email);
                 $stmt->execute();
-                $stmt->bind_result($hashedPassword);
+                $stmt->bind_result($dbUsername, $dbPassword);
                 $stmt->fetch();
                 $stmt->close();
-        
-                if ($hashedPassword) {
-                    if (password_verify($password, $hashedPassword)) {
-                        echo "Login successful for user '$email'.\n";
-                        $response = ["status" => "success", "message" => "Login successful!"];
-                    } else {
-                        echo "Error: Incorrect password for user '$email'.\n";
-                        $response = ["status" => "error", "message" => "Invalid email or password."];
-                    }
+                  
+                if ($password === $dbPassword) {
+                   echo "Login successful for user '$email'.\n";
+                   $response = ["status" => "success", "message" => "Login successful!", "username" => $dbUsername];
                 } else {
-                    echo "Error: User '$email' not found.\n";
-                    $response = ["status" => "error", "message" => "User not found"];
-                }
+                   echo "Error: Incorrect password for user '$email'.\n";
+                   $response = ["status" => "error", "message" => "Invalid email or password."];
+                } 
             } else {
                 echo "Error: Unknown request type '$type'.\n";
             }

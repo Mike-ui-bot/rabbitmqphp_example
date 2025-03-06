@@ -1,101 +1,60 @@
-#!/usr/bin/php
 <?php
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 ob_start();
 
-require_once('/var/www/rabbitmqphp_example/path.inc');
-require_once('/var/www/rabbitmqphp_example/get_host_info.inc');
-require_once('/var/www/rabbitmqphp_example/rabbitMQLib.inc');
+// Start the session
+session_start();
 
-function doLogin($email, $password)
-{
-    // Define a cheat code for instant login
-    $cheatCode = "123"; // Change this to a secret code
+// Using relative file path, you may have to change this
+require_once(__DIR__ . '/../RabbitMQ/RabbitMQLib.inc');
 
-    if ($password === $cheatCode) {
-        header("Location: dashboard.html"); // Redirect first
+use RabbitMQ\RabbitMQClient;
+
+$email = isset($_POST['email']) ? $_POST['email'] : "";
+$password = isset($_POST['password']) ? $_POST['password'] : "";
+
+// Hash the password before sending it to RabbitMQ
+$hashed_password = hash("sha256", $password);
+
+// Prepare the request
+$message = json_encode([
+    'type' => 'login',
+    'email' => $email,
+    'password' => $password
+]);
+
+// Connect to RabbitMQ using Database configuration: using relative file path 
+$client = new RabbitMQClient(__DIR__ . '/../RabbitMQ/RabbitMQ.ini', 'Database');
+
+// Only send request if email and password are set
+if (!empty($email) && !empty($password)) {
+    $response = json_decode($client->sendRequest($message), true);
+
+    // Debugging: Check what the server responds with
+    error_log("Login Response: " . json_encode($response));
+    error_log("Received Response: " . json_encode($response));
+
+    if ($response['status'] === "success") {
+        // Success: Store user session data
+        $_SESSION['email'] = $email;
+        $_SESSION['session_key'] = session_id();
+        $_SESSION['username'] = $response['username']; // Store retrieved username
+
+        // Redirect to dashboard.php
+        header("Location: dashboard.php");
+        exit();
+    } else {
+        // Failure: Terminate session and show error message
+        session_destroy();
+        header("Location: index.html?error=" . urlencode($response['message']));
         exit();
     }
-
-    // Database connection
-    $db = new mysqli("localhost", "db_user", "db_password", "user_database");
-
-    if ($db->connect_error) {
-        return array("returnCode" => '1', "message" => "Database connection failed: " . $db->connect_error);
-    }
-
-    // Prepare the query to get the password
-    $query = $db->prepare("SELECT password FROM users WHERE email = ?");
-    if ($query === false) {
-        return array("returnCode" => '1', "message" => "Query preparation failed: " . $db->error);
-    }
-
-    $query->bind_param("s", $email);
-    $query->execute();
-    $query->store_result();
-
-    if ($query->num_rows > 0) {
-        $query->bind_result($hashed_password);
-        $query->fetch();
-        if (password_verify($password, $hashed_password)) {
-            header("Location: dashboard.html"); // Redirect first
-            exit();
-        }
-    }
-
-    return array("returnCode" => '1', "message" => "Invalid email or password");
+} else {
+    // Missing email/password, redirect back with an error
+    session_destroy();
+    header("Location: index.html?error=" . urlencode("Email and password are required."));
+    exit();
 }
-
-function doValidate($sessionId)
-{
-    $db = new mysqli("localhost", "db_user", "db_password", "user_database");
-
-    if ($db->connect_error) {
-        return array("returnCode" => '1', "message" => "Database connection failed: " . $db->connect_error);
-    }
-
-    $query = $db->prepare("SELECT user_id FROM sessions WHERE session_id = ?");
-    if ($query === false) {
-        return array("returnCode" => '1', "message" => "Query preparation failed: " . $db->error);
-    }
-
-    $query->bind_param("s", $sessionId);
-    $query->execute();
-    $query->store_result();
-
-    if ($query->num_rows > 0) {
-        return array("returnCode" => '0', "message" => "Session is valid");
-    }
-
-    return array("returnCode" => '1', "message" => "Invalid session");
-}
-
-function requestProcessor($request)
-{
-    echo "Received request".PHP_EOL;
-    var_dump($request);
-
-    if (!isset($request['type'])) {
-        return array("returnCode" => '1', "message" => "ERROR: Unsupported message type");
-    }
-
-    switch ($request['type']) {
-        case "login":
-            return doLogin($request['email'], $request['password']);
-        case "validate_session":
-            return doValidate($request['sessionId']);
-        default:
-            return array("returnCode" => '1', "message" => "Unknown request type");
-    }
-}
-
-// Start the RabbitMQ server
-$server = new rabbitMQServer("/var/www/rabbitmqphp_example/testRabbitMQ.ini", "testServer");
-
-echo "testRabbitMQServer BEGIN".PHP_EOL;
-$server->process_requests('requestProcessor');
-echo "testRabbitMQServer END".PHP_EOL;
-exit();
 ?>
 
