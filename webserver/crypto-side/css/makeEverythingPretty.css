@@ -6,20 +6,41 @@ body {
     background-color: #f4f4f4;
 }
 
-
-/* Navigation Bar */
 .navbar {
     background: #222;
     color: white;
     padding: 15px;
-    text-align: center;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-
-.navbar a {
+/* Left side of navbar */
+.nav-left a {
     color: white;
     text-decoration: none;
     padding: 10px 15px;
+}
+
+/* Right side of navbar */
+.nav-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-right: 20px;
+    color: yellow;
+    font-weight: bold;
+}
+
+/* Logout button */
+.logout-btn {
+    color: orange;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.logout-btn:hover {
+    text-decoration: underline;
 }
 
 
@@ -70,13 +91,43 @@ th {
 }
 
 
-/* Forms */
-input, select {
-    padding: 10px;
+/* Modal for graph */
+#graphModal {
+    position: fixed;
+    top: 0;
+    left: 0;
     width: 100%;
-    margin: 10px 0;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
 }
 
+.modal-content {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    width: 80%;
+    max-width: 600px;
+}
 
+#closeModal {
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    cursor: pointer;
+    font-size: 30px;
+}
+/* Highlight Promising Coin */
+.highlighted-coin {
+    background-color: #f8d7da; /* Light red background */
+    border-left: 5px solid #28a745; /* Green border to indicate it's promising */
+    transition: background-color 0.3s ease, border-left 0.3s ease;
+}
 
+.highlighted-coin:hover {
+    background-color: #f1c4c4; /* Slightly darker when hovered */
+}
 

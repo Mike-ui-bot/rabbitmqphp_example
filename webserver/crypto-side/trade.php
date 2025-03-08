@@ -1,6 +1,13 @@
 <?php
 // trade.php
 include 'config.php';
+session_start();
+if (!isset($_SESSION['username'])) {
+    header(__DIR__ . '/../index.html'); // Redirect to login if no session
+    exit();
+}
+$username = $_SESSION['username'];
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -12,16 +19,21 @@ include 'config.php';
     <script src="js/trade.js" defer></script>
 </head>
 <body>
-<!-- Navigation Bar -->
-    <div class="navbar">
+<div class="navbar">
+    <div class="nav-left">
         <a href="home.php">Home</a>
         <a href="browse.php">Browse Coins</a>
         <a href="portfolio.php">Portfolio</a>
-	<a href="notifications.php">Notifications</a>
-        <a href="TestDash.html">News</a>
-
+        <a href="notifications.php">Notifications</a>
+        <a href="rss.php">News</a>
     </div>
 
+    <div class="nav-right">
+        <span>Welcome, <?= htmlspecialchars($username); ?></span>
+        <a href="../logout.php" class="logout-btn">Logout</a>
+    </div>
+</div>
+         
     <!-- Trading Form -->
     <div class="container">
         <h2>Fake Buy/Sell Crypto</h2>

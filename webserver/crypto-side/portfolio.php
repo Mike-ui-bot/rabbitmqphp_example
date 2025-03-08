@@ -1,6 +1,13 @@
 <?php
 // portfolio.php
 include 'config.php';
+session_start();
+if (!isset($_SESSION['username'])) {
+    header(__DIR__ . '/../index.html'); // Redirect to login if no session
+    exit();
+}
+$username = $_SESSION['username'];
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -12,14 +19,21 @@ include 'config.php';
     <script src="js/portfolio.js" defer></script>
 </head>
 <body>
- <div class="navbar">
+<div class="navbar">
+    <div class="nav-left">
         <a href="home.php">Home</a>
         <a href="browse.php">Browse Coins</a>
-	<a href="trade.php">Trade</a>
-	<a href="notifications.php">Notifications</a>
-        <a href="TestDash.html">News</a>
-
+        <a href="trade.php">Trade</a>
+        <a href="notifications.php">Notifications</a>
+        <a href="rss.php">News</a>
     </div>
+
+    <div class="nav-right">
+        <span>Welcome, <?= htmlspecialchars($username); ?></span>
+        <a href="../logout.php" class="logout-btn">Logout</a>
+    </div>
+</div>
+           
 
     <div class="container">
         <h2>My Portfolio</h2>

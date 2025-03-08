@@ -10,20 +10,42 @@ body {
 }
 
 .navbar {
-    background-color: black;
+    background: #222;
     color: white;
     padding: 15px;
-    position: fixed;
-    width: 100%;
-    top: 0;
-    left: 0;
-    z-index: 1000;
-    box-sizing: border-box;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-.navbar h2 {
-    margin: 0;
+/* Left side of navbar */
+.nav-left a {
+    color: white;
+    text-decoration: none;
+    padding: 10px 15px;
 }
+
+/* Right side of navbar */
+.nav-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-right: 20px;
+    color: yellow;
+    font-weight: bold;
+}
+
+/* Logout button */
+.logout-btn {
+    color: orange;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.logout-btn:hover {
+    text-decoration: underline;
+}
+
 
 #news-container {
     display: flex;
