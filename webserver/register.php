@@ -1,7 +1,7 @@
 <?php
 session_start();
 
-require_once(__DIR__ . '/../RabbitMQ/RabbitMQLib.inc');
+require_once(__DIR__ . '/../rabbitmqphp_example/RabbitMQ/RabbitMQLib.inc');
 
 use RabbitMQ\RabbitMQClient;
 
@@ -27,7 +27,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     try {
         // Create RabbitMQ client and send request
-        $client = new RabbitMQClient(__DIR__ . '/../RabbitMQ/RabbitMQ.ini', 'Database');
+        $client = new RabbitMQClient(__DIR__ . '/../rabbitmqphp_example/RabbitMQ/RabbitMQ.ini', 'Database');
         $response = json_decode($client->sendRequest($message), true);
         
         // Handle duplicate emails and usernames
