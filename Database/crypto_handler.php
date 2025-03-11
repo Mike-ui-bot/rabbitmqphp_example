@@ -1,11 +1,24 @@
 <?php
 require_once(__DIR__ . '/../RabbitMQ/RabbitMQLib.inc');
-require_once 'databaseConnect.php'; 
+
+// USE ABSOLUTE PATH OR CRON WONT UPDATE DB
+require_once('/var/www/test/Database/databaseConnect.php'); 
 
 use RabbitMQ\RabbitMQClient;
 
 // Script for getting crypto data from the API via the DMZ
-// Sends requests to DMZ to fetch and store crypto data
+
+// logging for cron: this script runs every 5 minutes. check the log file to confirm
+// USE ABSOLUTE PATH OR CRON WONT APPEND TO THE LOG FILE
+$logFile = '/var/www/test/Database/crypto_handler_log.txt';
+
+function logMessage($message) {
+    global $logFile;
+    $timestamp = date("Y-m-d H:i:s");
+    $logEntry = "[$timestamp] $message";
+    file_put_contents($logFile, $logEntry, FILE_APPEND);
+}
+
 try {
     global $db;
     echo "Trying to connect to RabbitMQ...\n";
@@ -48,14 +61,17 @@ try {
 
             if (!$stmt->execute()) {
                 echo "Error saving coin '{$coin['name']}' to database: " . $stmt->error . "\n";
+                logMessage("Error: '{$coin['name']}' could not be saved to DB: " . $stmt->error . "\n");
             }
             $stmt->close();
         }
-        echo "Crypto data saved to database! Check the DB.\n";
+        echo "Crypto data successfully updated! Check the DB.\n";
+        logMessage("Success: Crypto data successfully updated! Check the DB.\n");
     } else {
-        echo "Error: No valid data received from DMZ.\n";
+        echo "No valid data received from DMZ.\n";
+        logMessage("Error: No valid data received from DMZ.\n");
     }
-
+// RabbitMQ connection error
 } catch (Exception $error) {
     echo "Error: " . $error->getMessage() . "\n\n";
 }
