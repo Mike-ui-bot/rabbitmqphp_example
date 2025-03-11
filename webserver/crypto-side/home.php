@@ -96,4 +96,3 @@ $recommended_coins = isset($_SESSION['recommended_coins']) ? $_SESSION['recommen
 <script src="js/app.js"></script>
 </body>
 </html>
-

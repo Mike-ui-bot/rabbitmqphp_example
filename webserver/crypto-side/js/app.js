@@ -22,16 +22,29 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 });
 
-// Fetch cryptocurrency data from CoinCap API
+// Function to get top 100 crypto data from DB
 function fetchCryptoData() {
-    fetch("https://api.coincap.io/v2/assets")
-        .then(response => response.json())
-        .then(data => {
+    fetch("http://localhost/webserver/dbCryptoCall.php", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            action: "getTop100Crypto"
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Check if the response status is success and if 'data' exists
+        if (data.status === "success" && Array.isArray(data.data)) {
             let coinsTable = document.getElementById("crypto-list");
             coinsTable.innerHTML = ""; // Clear previous data
-            let coins = data.data.slice(0, 10); // Get top 10 cryptos
 
-            coins.forEach(coin => {
+            // Sort the coins by market cap in descending order
+            let sortedCoins = data.data.sort((a, b) => parseFloat(b.marketCapUsd) - parseFloat(a.marketCapUsd));
+
+            // Loop through the sorted coins to display the data
+            sortedCoins.forEach((coin, index) => {
                 let change24Hr = parseFloat(coin.changePercent24Hr).toFixed(2); // Get 24h change value
                 let changeColor = change24Hr > 0 ? 'green' : (change24Hr < 0 ? 'red' : 'black'); // Green for positive, red for negative, black for no change
 
@@ -39,7 +52,7 @@ function fetchCryptoData() {
                 let priceColor = parseFloat(coin.changePercent24Hr) > 0 ? 'green' : (parseFloat(coin.changePercent24Hr) < 0 ? 'red' : 'black');
 
                 // Define your "promising" coin logic:
-                // Example: Coin is promising if it's below $10 and has a positive change
+                // Example: Coin is below $10 and has a positive change
                 let isPromising = parseFloat(coin.priceUsd) < 10 && change24Hr > 0;
 
                 // Create a row for the coin
@@ -48,13 +61,12 @@ function fetchCryptoData() {
                 // Apply 'highlighted-coin' class if the coin is promising
                 if (isPromising) {
                     row.classList.add('highlighted-coin');
-
-                    // Store the coin as a recommended coin (in sessionStorage)
-                    storeRecommendedCoin(coin);
+                    storeRecommendedCoin(coin); // Save the coin to sessionStorage
                 }
 
+                // Use index + 1 for rank since array is 0-indexed
                 row.innerHTML = `
-                    <td>${coin.rank}</td>
+                    <td>${index + 1}</td> <!-- Rank -->
                     <td><a href="#" class="coin-link" data-id="${coin.id}">${coin.name} (${coin.symbol})</a></td>
                     <td style="color: ${priceColor};">$${parseFloat(coin.priceUsd).toFixed(2)}</td>
                     <td style="color: ${changeColor};">${change24Hr}%</td>
@@ -62,17 +74,20 @@ function fetchCryptoData() {
                 coinsTable.appendChild(row);
             });
 
-            // Add click event to each coin link
+            // Add click event to each coin link: displays coin history chart
             document.querySelectorAll('.coin-link').forEach(link => {
                 link.addEventListener('click', function(event) {
                     event.preventDefault();
                     const coinId = this.getAttribute('data-id');
                     const coinName = this.innerText.split(' (')[0];  // Extract name from "Bitcoin (BTC)"
-       		    fetchCoinHistory(coinId, coinName);
+                    fetchCoinHistory(coinId, coinName);
                 });
             });
-        })
-        .catch(error => console.error("Error fetching data:", error));
+        } else {
+            console.error("Failed to fetch data:", data);
+        }
+    })
+    .catch(error => console.error("Error fetching data:", error));
 }
 
 // Function to store recommended coin (keep only the last two)
@@ -118,7 +133,18 @@ function updateWatchlist(coins) {
 
 // Function to fetch and display the coin's historical data
 function fetchCoinHistory(coinId, coinName) {
-    fetch(`https://api.coincap.io/v2/assets/${coinId}/history?interval=d1`)  // Daily data
+    fetch("http://localhost/webserver/dmzCryptoCall.php", { // Daily data
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        // API URL is dynamic; depends on what coin you want to view
+        body: JSON.stringify({
+            action: "getCoinHistory",
+            coinId: coinId,
+            interval: "d1"
+        })
+    })
         .then(response => response.json())
         .then(data => {
             const prices = data.data;
@@ -179,4 +205,3 @@ function displayGraph(dates, priceValues, coinName) {
         }
     });
 }
-

@@ -5,6 +5,7 @@ require_once 'databaseConnect.php';
 use RabbitMQ\RabbitMQServer;
 use PhpAmqpLib\Message\AMQPMessage;
 
+// This script handles internal database calls: authentication, user portfolio, etc.
 try {
     global $db;
     echo "Trying to connect to RabbitMQ...\n";
@@ -17,16 +18,16 @@ try {
         // Decode JSON message
         $data = json_decode($message, true);
         $response = ["status" => "error", "message" => "Unknown error"];
-        
-        if (!isset($data['type'])) {
-            echo "Error: Message type not specified.\n";
-            $response["message"] = "Message type not specified.";
+
+        if (!isset($data['action'])) {
+            echo "Error: Action not specified.\n";
+            $response["message"] = "Action not specified.";
         } else {
     
-            $type = $data['type'];
+            $action = $data['action'];
         
             // Registration handling
-            if ($type === "register") {
+            if ($action === "register") {
                 $email = $data['email'];
                 $username = $data['username'];
                 $password = $data['password'];
@@ -63,7 +64,7 @@ try {
                 }
 
             // Login handling
-            } elseif ($type === "login") {
+            } elseif ($action === "login") {
                 $email = $data['email'];
                 $password = $data['password'];
         
@@ -82,8 +83,31 @@ try {
                    echo "Error: Incorrect password for user '$email'.\n";
                    $response = ["status" => "error", "message" => "Invalid email or password."];
                 } 
+            } elseif ($action === "getTop100Crypto") {
+                $query = "SELECT * FROM stocks ORDER BY market_cap DESC LIMIT 100"; // Example: Sort by market cap
+                $result = $db->query($query);
+
+                if ($result && $result->num_rows > 0) {
+                    $cryptos = [];
+                    while ($row = $result->fetch_assoc()) {
+                        $cryptos[] = [
+                            'id' => $row['asset_id'],
+                            'name' => $row['name'],
+                            'symbol' => $row['symbol'],
+                            'priceUsd' => $row['price'],
+                            'marketCapUsd' => $row['market_cap'],
+                            'supply' => $row['supply'],
+                            'maxSupply' => $row['max_supply'],
+                            'volumeUsd24Hr' => $row['volume'],
+                            'changePercent24Hr' => $row['change_percent'],
+                        ];
+                    }
+                    $response = ["status" => "success", "data" => $cryptos];
+                } else {
+                    $response = ["status" => "error", "message" => "Failed to fetch top 100 cryptocurrencies from the database."];
+                }
             } else {
-                echo "Error: Unknown request type '$type'.\n";
+                echo "Error: Unknown action '$action'.\n";
             }
         }
         return $response;

@@ -3,9 +3,9 @@
 
 
 $host = 'localhost'; // Change if using a remote DB
-$dbname = 'crypto_db';
-$username = 'CryptoTest'; // Set your database username
-$password = 'coin'; // Set your database password
+$dbname = 'IT490';
+$username = 'tester_user'; // Set your database username
+$password = 'testMe'; // Set your database password
 
 
 try {

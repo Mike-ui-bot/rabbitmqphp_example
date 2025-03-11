@@ -56,6 +56,7 @@ class RabbitMQServer {
         }
     }
 
+    // Works in a response/request manner
     public function consume(callable $callback) {
         $this->channel->basic_consume($this->queue, '', false, true, false, false, function ($msg) use ($callback) {
             echo "\nReceived message!\n";
@@ -179,7 +180,7 @@ class RabbitMQClient {
         $response = null;
         $this->channel->basic_consume($callback_queue, '', false, true, false, false,
             function ($msg) use (&$response, $correlation_id) {
-                echo "Received response with correlation ID: " . $msg->get('correlation_id') . "\n";
+                //echo "Received response with correlation ID: " . $msg->get('correlation_id') . "\n";
                 if ($msg->get('correlation_id') == $correlation_id) {
                     $response = $msg->body;
                 }
@@ -196,8 +197,8 @@ class RabbitMQClient {
 
         $this->channel->basic_publish($msg, $this->exchange, $this->routing_key);
 
-        echo "Message sent with correlation ID: " . $correlation_id . "\n";
-        echo "Waiting for response...\n";
+        //echo "Message sent with correlation ID: " . $correlation_id . "\n";
+        //echo "Waiting for response...\n";
 
         // Timeout 
         $startTime = time();
