@@ -20,101 +20,68 @@ document.addEventListener("DOMContentLoaded", function () {
             modal.style.display = 'none'; // Close modal when clicking outside
         }
     });
+
+    document.getElementById("search-bar").addEventListener("input", filterCoins);
+    document.getElementById("filter-market-cap").addEventListener("change", filterCoins);
+    document.getElementById("filter-positive-change").addEventListener("change", filterCoins);
 });
 
-// Function to get top 100 crypto data from DB
+let coinsData = [];
+
 function fetchCryptoData() {
-    fetch("http://localhost/webserver/dbCryptoCall.php", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            action: "getTop100Crypto"
+    fetch("https://api.coincap.io/v2/assets")
+        .then(response => response.json())
+        .then(data => {
+            coinsData = data.data;
+            displayCoins(coinsData);
         })
-    })
-    .then(response => response.json())
-    .then(data => {
-        // Check if the response status is success and if 'data' exists
-        if (data.status === "success" && Array.isArray(data.data)) {
-            let coinsTable = document.getElementById("crypto-list");
-            coinsTable.innerHTML = ""; // Clear previous data
-
-            // Sort the coins by market cap in descending order
-            let sortedCoins = data.data.sort((a, b) => parseFloat(b.marketCapUsd) - parseFloat(a.marketCapUsd));
-
-            // Loop through the sorted coins to display the data
-            sortedCoins.forEach((coin, index) => {
-                let change24Hr = parseFloat(coin.changePercent24Hr).toFixed(2); // Get 24h change value
-                let changeColor = change24Hr > 0 ? 'green' : (change24Hr < 0 ? 'red' : 'black'); // Green for positive, red for negative, black for no change
-
-                // Apply color to price
-                let priceColor = parseFloat(coin.changePercent24Hr) > 0 ? 'green' : (parseFloat(coin.changePercent24Hr) < 0 ? 'red' : 'black');
-
-                // Define your "promising" coin logic:
-                // Example: Coin is below $10 and has a positive change
-                let isPromising = parseFloat(coin.priceUsd) < 10 && change24Hr > 0;
-
-                // Create a row for the coin
-                let row = document.createElement("tr");
-
-                // Apply 'highlighted-coin' class if the coin is promising
-                if (isPromising) {
-                    row.classList.add('highlighted-coin');
-                    storeRecommendedCoin(coin); // Save the coin to sessionStorage
-                }
-
-                // Use index + 1 for rank since array is 0-indexed
-                row.innerHTML = `
-                    <td>${index + 1}</td> <!-- Rank -->
-                    <td><a href="#" class="coin-link" data-id="${coin.id}">${coin.name} (${coin.symbol})</a></td>
-                    <td style="color: ${priceColor};">$${parseFloat(coin.priceUsd).toFixed(2)}</td>
-                    <td style="color: ${changeColor};">${change24Hr}%</td>
-                `;
-                coinsTable.appendChild(row);
-            });
-
-            // Add click event to each coin link: displays coin history chart
-            document.querySelectorAll('.coin-link').forEach(link => {
-                link.addEventListener('click', function(event) {
-                    event.preventDefault();
-                    const coinId = this.getAttribute('data-id');
-                    const coinName = this.innerText.split(' (')[0];  // Extract name from "Bitcoin (BTC)"
-                    fetchCoinHistory(coinId, coinName);
-                });
-            });
-        } else {
-            console.error("Failed to fetch data:", data);
-        }
-    })
-    .catch(error => console.error("Error fetching data:", error));
+        .catch(error => console.error("Error fetching data:", error));
 }
 
-// Function to store recommended coin (keep only the last two)
+function displayCoins(coins) {
+    let coinsTable = document.getElementById("crypto-list");
+    coinsTable.innerHTML = "";
+    coins.forEach(coin => {
+        let change24Hr = parseFloat(coin.changePercent24Hr).toFixed(2);
+        let changeColor = change24Hr > 0 ? 'green' : (change24Hr < 0 ? 'red' : 'black');
+        let priceColor = change24Hr > 0 ? 'green' : (change24Hr < 0 ? 'red' : 'black');
+        let isPromising = parseFloat(coin.priceUsd) < 10 && change24Hr > 0;
+        let row = document.createElement("tr");
+        if (isPromising) {
+            row.classList.add('highlighted-coin');
+            storeRecommendedCoin(coin);
+        }
+        row.innerHTML = `
+            <td>${coin.rank}</td>
+            <td><a href="#" class="coin-link" data-id="${coin.id}">${coin.name} (${coin.symbol})</a></td>
+            <td style="color: ${priceColor};">$${parseFloat(coin.priceUsd).toFixed(2)}</td>
+            <td style="color: ${changeColor};">${change24Hr}%</td>
+        `;
+        coinsTable.appendChild(row);
+    });
+    document.querySelectorAll('.coin-link').forEach(link => {
+        link.addEventListener('click', function(event) {
+            event.preventDefault();
+            const coinId = this.getAttribute('data-id');
+            const coinName = this.innerText.split(' (')[0];
+            fetchCoinHistory(coinId, coinName);
+        });
+    });
+}
+
 function storeRecommendedCoin(coin) {
-    // Retrieve the current list of recommended coins from sessionStorage
     let recommendedCoins = JSON.parse(sessionStorage.getItem('recommended_coins')) || [];
-
-    // Add the new coin to the list
     recommendedCoins.unshift(coin);
-
-    // Keep only the last two coins
     if (recommendedCoins.length > 2) {
         recommendedCoins.pop();
     }
-
-    // Store the updated list in sessionStorage
     sessionStorage.setItem('recommended_coins', JSON.stringify(recommendedCoins));
-
-    // Optionally, update the "Keep an Eye On" table
     updateWatchlist(recommendedCoins);
 }
 
-// Function to update the "Keep an Eye On" table
 function updateWatchlist(coins) {
     const watchlistTable = document.getElementById('watchlist');
-    watchlistTable.innerHTML = ''; // Clear previous list
-
+    watchlistTable.innerHTML = '';
     if (coins.length === 0) {
         watchlistTable.innerHTML = '<tr><td colspan="4">No recommended coins yet.</td></tr>';
     } else {
@@ -130,50 +97,65 @@ function updateWatchlist(coins) {
         });
     }
 }
-
-// Function to fetch and display the coin's historical data
-function fetchCoinHistory(coinId, coinName) {
-    fetch("http://localhost/webserver/dmzCryptoCall.php", { // Daily data
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        // API URL is dynamic; depends on what coin you want to view
-        body: JSON.stringify({
-            action: "getCoinHistory",
-            coinId: coinId,
-            interval: "d1"
-        })
-    })
+function fetchCoinDetails(coinId, coinName) {
+    fetch(`https://api.coincap.io/v2/assets/${coinId}`)
         .then(response => response.json())
         .then(data => {
+            if (!data || !data.data) {
+                throw new Error('No data found for the coin');
+            }
+
+            const coinData = data.data;
+            const marketCap = parseFloat(coinData.marketCapUsd).toFixed(2);
+            const tradingVolume = parseFloat(coinData.volumeUsd24Hr).toFixed(2);
+            const circulatingSupply = parseFloat(coinData.supply).toFixed(2);
+            const rank = coinData.rank;
+
+            // Now, update the modal with the real-time data
+            document.getElementById('market-cap').innerText = `$${marketCap}`;
+            document.getElementById('trading-volume').innerText = `$${tradingVolume}`;
+            document.getElementById('circulating-supply').innerText = circulatingSupply;
+            document.getElementById('rank').innerText = rank;
+        })
+        .catch(error => {
+            console.error("Error fetching coin details:", error);
+            alert("Could not fetch coin details: " + error.message); // Optional: User feedback
+        });
+}
+function fetchCoinHistory(coinId, coinName) {
+    fetch(`https://api.coincap.io/v2/assets/${coinId}/history?interval=d1`)
+        .then(response => response.json())
+        .then(data => {
+            if (!data || !data.data) {
+                throw new Error('No data found for the coin');
+            }
+
             const prices = data.data;
+            if (!prices.length) {
+                throw new Error('No price data available');
+            }
+
             const dates = prices.map(item => item.date);
             const priceValues = prices.map(item => parseFloat(item.priceUsd));
+            displayGraph(dates, priceValues, coinName);
 
-            displayGraph(dates, priceValues, coinName);  // Pass the coin name here
+            // After fetching the historical data, fetch the additional coin details
+            fetchCoinDetails(coinId, coinName);
+        })
+        .catch(error => {
+            console.error("Error fetching coin data:", error);
+            alert("Could not fetch coin data: " + error.message); // Optional: User feedback
         });
 }
 
 
-// Function to display the graph
 function displayGraph(dates, priceValues, coinName) {
-    // If there's an existing chart, destroy it to reset before creating a new one
     if (currentChart) {
         currentChart.destroy();
     }
-
     const ctx = document.getElementById('coin-graph').getContext('2d');
-    const coinNameElement = document.getElementById('coin-name');
-    
-    // Update coin name at the top of the graph
-    coinNameElement.innerText = coinName;
-
-    // Close the modal if it exists
-    const graphModal = document.getElementById('graphModal');
-    graphModal.style.display = 'block';
-
-    // Create the chart
+    document.getElementById('coin-name').innerText = coinName;
+    document.getElementById('graphModal').style.display = 'block';
     currentChart = new Chart(ctx, {
         type: 'line',
         data: {
@@ -189,19 +171,25 @@ function displayGraph(dates, priceValues, coinName) {
         options: {
             responsive: true,
             scales: {
-                x: {
-                    title: {
-                        display: true,
-                        text: 'Date'
-                    }
-                },
-                y: {
-                    title: {
-                        display: true,
-                        text: 'Price (USD)'
-                    }
-                }
+                x: { title: { display: true, text: 'Date' } },
+                y: { title: { display: true, text: 'Price (USD)' } }
             }
         }
     });
 }
+
+function filterCoins() {
+    let searchQuery = document.getElementById("search-bar").value.toLowerCase();
+    let filterMarketCap = document.getElementById("filter-market-cap").checked;
+    let filterPositiveChange = document.getElementById("filter-positive-change").checked;
+
+    let filteredCoins = coinsData.filter(coin => {
+        let matchesSearch = coin.name.toLowerCase().startsWith(searchQuery);
+        let matchesMarketCap = !filterMarketCap || parseFloat(coin.marketCapUsd) > 1000000000;
+        let matchesPositiveChange = !filterPositiveChange || parseFloat(coin.changePercent24Hr) > 0;
+        return matchesSearch && matchesMarketCap && matchesPositiveChange;
+    });
+
+    displayCoins(filteredCoins);
+}
+

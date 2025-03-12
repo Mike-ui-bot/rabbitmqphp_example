@@ -40,6 +40,9 @@ $recommended_coins = isset($_SESSION['recommended_coins']) ? $_SESSION['recommen
 
 <div class="container">
     <h2>Live Market Cryptocurrencies</h2>
+    <input type="text" id="search-bar" placeholder="Search for a coin...">
+    <label><input type="checkbox" id="filter-market-cap"> High Market Cap</label>
+    <label><input type="checkbox" id="filter-positive-change"> Positive 24h Change</label>
     <table>
         <thead>
             <tr>
@@ -56,13 +59,22 @@ $recommended_coins = isset($_SESSION['recommended_coins']) ? $_SESSION['recommen
 </div>
 
 <!-- Modal for displaying the graph (hidden initially) -->
+<!-- Modal for displaying the graph (hidden initially) -->
 <div id="graphModal" style="display: none;">
     <div class="modal-content">
         <span id="closeModal">&times;</span>
         <h2>Price History of <span id="coin-name"></span></h2>
         <canvas id="coin-graph" width="400" height="200"></canvas>
+        <div id="coin-details">
+            <!-- Additional coin details will be injected here -->
+             <p>Market Cap: <span id="market-cap">Loading...</span></p>
+   	     <p>24h Trading Volume: <span id="trading-volume">Loading...</span></p>
+   	     <p>Circulating Supply: <span id="circulating-supply">Loading...</span></p>
+   	     <p>Rank: <span id="rank">Loading...</span></p>
+        </div>
     </div>
 </div>
+
 
 <!-- Keep an Eye On Section -->
 <div class="container">

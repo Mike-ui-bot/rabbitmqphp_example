@@ -130,4 +130,13 @@ th {
 .highlighted-coin:hover {
     background-color: #f1c4c4; /* Slightly darker when hovered */
 }
+#coin-details {
+    margin-top: 20px;
+    font-size: 14px;
+    color: #333;
+}
+
+#coin-details p {
+    margin: 5px 0;
+}
 

@@ -2,10 +2,10 @@
 // config.php
 
 
-$host = 'localhost'; // Change if using a remote DB
-$dbname = 'IT490';
-$username = 'tester_user'; // Set your database username
-$password = 'testMe'; // Set your database password
+$host = 'localhost';
+$dbname = 'crypto_db';
+$username = 'CryptoTest';
+$password = 'coin';
 
 
 try {

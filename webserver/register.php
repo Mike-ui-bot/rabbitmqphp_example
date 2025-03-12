@@ -19,7 +19,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
     // Encode message as JSON
     $message = json_encode([
-        'action' => "register",
+        'type' => "register",
         'email' => $email,
         'username' => $username,
         'password' => $password,

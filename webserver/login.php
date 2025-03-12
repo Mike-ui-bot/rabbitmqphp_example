@@ -7,7 +7,7 @@ ob_start();
 session_start();
 
 // Using relative file path, you may have to change this
-require_once(__DIR__ . '/../RabbitMQ/RabbitMQLib.inc');
+require_once(__DIR__ . '/../rabbitmqphp_example/RabbitMQ/RabbitMQLib.inc');
 
 use RabbitMQ\RabbitMQClient;
 
@@ -19,13 +19,13 @@ $hashed_password = hash("sha256", $password);
 
 // Prepare the request
 $message = json_encode([
-    'action' => 'login',
+    'type' => 'login',
     'email' => $email,
     'password' => $password
 ]);
 
 // Connect to RabbitMQ using Database configuration: using relative file path 
-$client = new RabbitMQClient(__DIR__ . '/../RabbitMQ/RabbitMQ.ini', 'Database');
+$client = new RabbitMQClient(__DIR__ . '/../rabbitmqphp_example/RabbitMQ/RabbitMQ.ini', 'Database');
 
 // Only send request if email and password are set
 if (!empty($email) && !empty($password)) {
