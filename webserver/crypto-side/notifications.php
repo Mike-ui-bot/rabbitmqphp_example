@@ -8,9 +8,9 @@ if (!isset($_SESSION['username'])) {
 $username = $_SESSION['username'];
 
 require_once(__DIR__ . '/../../rabbitmqphp_example/RabbitMQ/RabbitMQLib.inc');
-use RabbitMQ\RabbitMQClient;
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
+use RabbitMQ\RabbitMQClient;
 require '/var/www/rabbitmqphp_example/vendor/autoload.php';
 
 // Function to send email via PHPMailer
@@ -37,55 +37,29 @@ function send_email($email, $message) {
     }
 }
 
-// Function to check coin price over 5 minutes
-function check_price_change($coin_symbol, $email) {
-    $client = new RabbitMQClient(__DIR__ . '/../../rabbitmqphp_example/RabbitMQ/RabbitMQ.ini', 'Database');
-    $old_price = null;
-    $attempts = 5;
-    
-    while ($attempts > 0) {
-        $request = ['action' => 'get_coin_price', 'coin_symbol' => $coin_symbol];
-        $response = $client->send_request($request);
-        
-        if ($response && isset($response['price'])) {
-            $new_price = $response['price'];
-            if ($old_price !== null && $old_price != $new_price) {
-                $message = "The price of $coin_symbol changed from $old_price to $new_price.\n";
-                $message .= "Market Cap: {$response['market_cap']}\n";
-                $message .= "Supply: {$response['supply']}\nMax Supply: {$response['max_supply']}\n";
-                $message .= "24h Volume: {$response['volume']}\nChange (24h): {$response['change_percent']}%\n";
-                $message .= "Last Updated: {$response['last_updated']}";
-                send_email($email, $message);
-                return;
-            }
-            $old_price = $new_price;
-        }
-        sleep(60); // Wait 1 minute before checking again
-        $attempts--;
-    }
-}
-
 // Handle alert form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $coin_symbol = $_POST['coin_symbol'];
     $email = $_POST['email'];
+
     $_SESSION['alerts'][] = [
         'coin_symbol' => $coin_symbol,
         'email' => $email,
         'username' => $username,
         'created_at' => date("Y-m-d H:i:s")
     ];
-    
+
+    // Send confirmation email when an alert is set
     send_email($email, "Alert set for $coin_symbol! You will be notified of price changes.");
-    
+
     // Start background process for checking price
-    exec("nohup php -r 'check_price_change(\"$coin_symbol\", \"$email\");' > /dev/null 2>&1 &");
+    $check_price_script = __DIR__ . '/check_price.php';
+    exec("nohup php $check_price_script $coin_symbol $email > /dev/null 2>&1 &");
 }
 
 // Fetch active alerts
 $alerts = $_SESSION['alerts'];
 ?>
-
 
 <!DOCTYPE html>
 <html lang="en">
@@ -125,7 +99,7 @@ $alerts = $_SESSION['alerts'];
         <div id="suggestions" class="suggestions-box"></div> 
 
         <label for="email">Your Email:</label>
-        <input type="email" name="email" required> <!-- Change phone_number field to email -->
+        <input type="email" name="email" required> 
 
         <button type="submit">Set Alert</button>
     </form>
@@ -138,7 +112,7 @@ $alerts = $_SESSION['alerts'];
         <thead>
             <tr>
                 <th>Coin</th>
-                <th>Email</th> <!-- Change phone number to email -->
+                <th>Email</th> 
                 <th>Set On</th>
             </tr>
         </thead>
@@ -149,7 +123,7 @@ $alerts = $_SESSION['alerts'];
                 <?php foreach ($alerts as $alert): ?>
                     <tr>
                         <td><?= htmlspecialchars($alert['coin_symbol']) ?></td>
-                        <td><?= htmlspecialchars($alert['email']) ?></td> <!-- Change phone number to email -->
+                        <td><?= htmlspecialchars($alert['email']) ?></td> 
                         <td><?= date("Y-m-d H:i", strtotime($alert['created_at'])) ?></td>
                     </tr>
                 <?php endforeach; ?>
