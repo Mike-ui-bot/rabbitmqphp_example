@@ -2,79 +2,91 @@
 // notifications.php
 session_start();
 if (!isset($_SESSION['username'])) {
-    header(__DIR__ . '/../index.html');
+    header('Location: ../index.html');
     exit();
 }
 $username = $_SESSION['username'];
 
-// Initialize alerts array if not already set
-if (!isset($_SESSION['alerts'])) {
-    $_SESSION['alerts'] = [];
-}
+require_once(__DIR__ . '/../../rabbitmqphp_example/RabbitMQ/RabbitMQLib.inc');
+use RabbitMQ\RabbitMQClient;
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+require '/var/www/rabbitmqphp_example/vendor/autoload.php';
 
-// Function to send SMS via InstaSent API
-function send_sms($phone_number, $message) {
-    $api_key = 'issw_ynbyfhq9yhyp8efwhpfjyfdpdbanduuf1cn';  // Your InstaSent API token
-    $api_url = 'https://www.instasent.com/api/v2/send-sms';
-
-    // Prepare data for the POST request
-    $data = [
-        'api_key' => $api_key,
-        'to' => $phone_number,      // Phone number to send SMS to
-        'message' => $message,      // Message content
-        'sender' => 'Crypto'
-    ];
-
-    // Initialize cURL session
-    $ch = curl_init($api_url);
-    curl_setopt($ch, CURLOPT_POST, 1);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));  // Send data
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-
-    // Execute the request and get the response
-    $response = curl_exec($ch);
-    curl_close($ch);
-
-    // Decode the response and check if SMS was sent successfully
-    $response_data = json_decode($response, true);
-    if (isset($response_data['status']) && $response_data['status'] === 'success') {
-        return true;  // SMS sent successfully
-    } else {
-        // Log the response error message for debugging
-        error_log('InstaSent error response: ' . print_r($response_data, true));
-        return false;  // Failed to send SMS
+// Function to send email via PHPMailer
+function send_email($email, $message) {
+    $mail = new PHPMailer(true);
+    try {
+        $mail->isSMTP();
+        $mail->Host       = 'smtp.gmail.com';
+        $mail->SMTPAuth   = true;
+        $mail->Username   = 'mikebutryn123@gmail.com';
+        $mail->Password   = 'chhurfaapxwlbwqo';
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port       = 587;
+        $mail->setFrom('alertcrypto@gmail.com', 'Crypto Alert');
+        $mail->addAddress($email);
+        $mail->isHTML(true);
+        $mail->Subject = 'Crypto Alert';
+        $mail->Body    = $message;
+        $mail->send();
+        return true;
+    } catch (Exception $e) {
+        error_log("Email error: {$mail->ErrorInfo}");
+        return false;
     }
 }
 
-// Handle form submission to set an alert
+// Function to check coin price over 5 minutes
+function check_price_change($coin_symbol, $email) {
+    $client = new RabbitMQClient(__DIR__ . '/../../rabbitmqphp_example/RabbitMQ/RabbitMQ.ini', 'Database');
+    $old_price = null;
+    $attempts = 5;
+    
+    while ($attempts > 0) {
+        $request = ['action' => 'get_coin_price', 'coin_symbol' => $coin_symbol];
+        $response = $client->send_request($request);
+        
+        if ($response && isset($response['price'])) {
+            $new_price = $response['price'];
+            if ($old_price !== null && $old_price != $new_price) {
+                $message = "The price of $coin_symbol changed from $old_price to $new_price.\n";
+                $message .= "Market Cap: {$response['market_cap']}\n";
+                $message .= "Supply: {$response['supply']}\nMax Supply: {$response['max_supply']}\n";
+                $message .= "24h Volume: {$response['volume']}\nChange (24h): {$response['change_percent']}%\n";
+                $message .= "Last Updated: {$response['last_updated']}";
+                send_email($email, $message);
+                return;
+            }
+            $old_price = $new_price;
+        }
+        sleep(60); // Wait 1 minute before checking again
+        $attempts--;
+    }
+}
+
+// Handle alert form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $coin_symbol = $_POST['coin_symbol'];
-    $phone_number = $_POST['phone_number'];
-
-    // Add new alert to the session's alerts array
+    $email = $_POST['email'];
     $_SESSION['alerts'][] = [
         'coin_symbol' => $coin_symbol,
-        'phone_number' => $phone_number,
+        'email' => $email,
         'username' => $username,
         'created_at' => date("Y-m-d H:i:s")
     ];
-
-    // Message to send via SMS
-    $message = "Alert set for $coin_symbol! You will be notified when the price changes.";
-
-    // Send SMS using InstaSent API
-    $sms_sent = send_sms($phone_number, $message);
-
-    if ($sms_sent) {
-        $message = "Alert set successfully! You will be notified via SMS.";
-    } else {
-        $message = "Failed to send SMS. Please try again.";
-    }
+    
+    send_email($email, "Alert set for $coin_symbol! You will be notified of price changes.");
+    
+    // Start background process for checking price
+    exec("nohup php -r 'check_price_change(\"$coin_symbol\", \"$email\");' > /dev/null 2>&1 &");
 }
 
-// Fetch active alerts from the session
+// Fetch active alerts
 $alerts = $_SESSION['alerts'];
 ?>
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -112,8 +124,8 @@ $alerts = $_SESSION['alerts'];
 
         <div id="suggestions" class="suggestions-box"></div> 
 
-        <label for="phone_number">Your Phone Number:</label>
-        <input type="text" name="phone_number" required>
+        <label for="email">Your Email:</label>
+        <input type="email" name="email" required> <!-- Change phone_number field to email -->
 
         <button type="submit">Set Alert</button>
     </form>
@@ -126,7 +138,7 @@ $alerts = $_SESSION['alerts'];
         <thead>
             <tr>
                 <th>Coin</th>
-                <th>Phone Number</th>
+                <th>Email</th> <!-- Change phone number to email -->
                 <th>Set On</th>
             </tr>
         </thead>
@@ -137,7 +149,7 @@ $alerts = $_SESSION['alerts'];
                 <?php foreach ($alerts as $alert): ?>
                     <tr>
                         <td><?= htmlspecialchars($alert['coin_symbol']) ?></td>
-                        <td><?= htmlspecialchars($alert['phone_number']) ?></td>
+                        <td><?= htmlspecialchars($alert['email']) ?></td> <!-- Change phone number to email -->
                         <td><?= date("Y-m-d H:i", strtotime($alert['created_at'])) ?></td>
                     </tr>
                 <?php endforeach; ?>

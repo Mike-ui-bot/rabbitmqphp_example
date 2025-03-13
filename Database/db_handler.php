@@ -128,7 +128,33 @@ try {
 
                         $response = ["status" => "success", "balance" => $balance];
                     } break;
-                
+                case "get_coin_price":
+    $coin_symbol = $data['coin_symbol'];
+
+    // Fetch coin price from the crypto table
+    $stmt = $db->prepare("SELECT price, market_cap, supply, max_supply, volume, change_percent, last_updated FROM crypto WHERE coin_symbol = ?");
+    $stmt->bind_param("s", $coin_symbol);
+    $stmt->execute();
+    $stmt->bind_result($price, $market_cap, $supply, $max_supply, $volume, $change_percent, $last_updated);
+    $stmt->fetch();
+    $stmt->close();
+
+    if (!$price) {
+        $response = ["status" => "error", "message" => "Coin symbol '$coin_symbol' not found"];
+    } else {
+        $response = [
+            "status" => "success",
+            "price" => $price,
+            "market_cap" => $market_cap,
+            "supply" => $supply,
+            "max_supply" => $max_supply,
+            "volume" => $volume,
+            "change_percent" => $change_percent,
+            "last_updated" => $last_updated
+        ];
+    }
+    break;
+
                 // Add funds
                 case "add_funds":
                     $username = $data['username'];
