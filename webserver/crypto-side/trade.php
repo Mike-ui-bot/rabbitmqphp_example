@@ -1,7 +1,7 @@
 <?php
 //ini_set('display_errors', 1);
-include 'config.php';
-require_once(__DIR__ . '/../../rabbitmqphp_example/RabbitMQ/RabbitMQLib.inc');
+//include 'config.php';
+require_once(__DIR__ . '/../../RabbitMQ/RabbitMQLib.inc');
 session_start();
 if (!isset($_SESSION['username'])) {
     header('Location: ../index.html');
@@ -11,7 +11,7 @@ $username = $_SESSION['username'];
 use RabbitMQ\RabbitMQClient;
 
 
-$client = new RabbitMQClient(__DIR__ . '/../../rabbitmqphp_example/RabbitMQ/RabbitMQ.ini', 'Database');
+$client = new RabbitMQClient(__DIR__ . '/../../RabbitMQ/RabbitMQ.ini', 'Database');
 
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -139,9 +139,3 @@ $balance = $balance_response['status'] === 'success' ? $balance_response['balanc
 <script src="js/trade.js"></script>
 </body>
 </html>
-
-
-
-
-
-

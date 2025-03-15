@@ -7,11 +7,11 @@ if (!isset($_SESSION['username'])) {
 }
 $username = $_SESSION['username'];
 
-require_once(__DIR__ . '/../../rabbitmqphp_example/RabbitMQ/RabbitMQLib.inc');
+require_once(__DIR__ . '/../../RabbitMQ/RabbitMQLib.inc');
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 use RabbitMQ\RabbitMQClient;
-require '/var/www/rabbitmqphp_example/vendor/autoload.php';
+require '/var/www/test/vendor/autoload.php';
 
 // Function to send email via PHPMailer
 function send_email($email, $message) {
@@ -39,22 +39,22 @@ function send_email($email, $message) {
 
 // Handle alert form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $coin_symbol = $_POST['coin_symbol'];
+    $symbol = $_POST['symbol'];
     $email = $_POST['email'];
 
     $_SESSION['alerts'][] = [
-        'coin_symbol' => $coin_symbol,
+        'symbol' => $symbol,
         'email' => $email,
         'username' => $username,
         'created_at' => date("Y-m-d H:i:s")
     ];
 
     // Send confirmation email when an alert is set
-    send_email($email, "Alert set for $coin_symbol! You will be notified of price changes.");
+    send_email($email, "Alert set for $symbol! You will be notified of price changes.");
 
     // Start background process for checking price
     $check_price_script = __DIR__ . '/check_price.php';
-    exec("nohup php $check_price_script $coin_symbol $email > /dev/null 2>&1 &");
+    exec("nohup php $check_price_script $symbol $email > /dev/null 2>&1 &");
 }
 
 // Fetch active alerts
@@ -93,8 +93,8 @@ $alerts = $_SESSION['alerts'];
     <?php endif; ?>
 
     <form method="POST">
-        <label for="coin_symbol">Coin Symbol (e.g., BTC):</label>
-        <input type="text" id="coin_symbol" name="coin_symbol" required>
+        <label for="symbol">Coin Symbol (e.g., BTC):</label>
+        <input type="text" id="symbol" name="symbol" required>
 
         <div id="suggestions" class="suggestions-box"></div> 
 
@@ -122,7 +122,7 @@ $alerts = $_SESSION['alerts'];
             <?php else: ?>
                 <?php foreach ($alerts as $alert): ?>
                     <tr>
-                        <td><?= htmlspecialchars($alert['coin_symbol']) ?></td>
+                        <td><?= htmlspecialchars($alert['symbol']) ?></td>
                         <td><?= htmlspecialchars($alert['email']) ?></td> 
                         <td><?= date("Y-m-d H:i", strtotime($alert['created_at'])) ?></td>
                     </tr>

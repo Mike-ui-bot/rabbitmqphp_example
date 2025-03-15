@@ -3,9 +3,9 @@
 
 
 $host = 'localhost';
-$dbname = 'crypto_db';
-$username = 'CryptoTest';
-$password = 'coin';
+$dbname = 'IT490';
+$username = 'tester_user';
+$password = 'testMe';
 
 
 try {

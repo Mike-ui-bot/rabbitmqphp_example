@@ -10,6 +10,7 @@ class ComposerStaticInit6864f70e997927075b9aeb5dd3c123d9
         'P' => 
         array (
             'PhpAmqpLib\\' => 11,
+            'PHPMailer\\PHPMailer\\' => 20,
         ),
     );
 
@@ -17,6 +18,10 @@ class ComposerStaticInit6864f70e997927075b9aeb5dd3c123d9
         'PhpAmqpLib\\' => 
         array (
             0 => __DIR__ . '/..' . '/videlalvaro/php-amqplib/PhpAmqpLib',
+        ),
+        'PHPMailer\\PHPMailer\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/phpmailer/phpmailer/src',
         ),
     );
 

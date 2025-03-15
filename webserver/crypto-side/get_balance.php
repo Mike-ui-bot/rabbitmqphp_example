@@ -1,6 +1,6 @@
 <?php
-include 'config.php';
-require_once(__DIR__ . '/../../rabbitmqphp_example/RabbitMQ/RabbitMQLib.inc');
+//include 'config.php';
+require_once(__DIR__ . '/../../RabbitMQ/RabbitMQLib.inc');
 session_start();
 if (!isset($_SESSION['username'])) {
     echo json_encode(['status' => 'error', 'message' => 'User not logged in']);
@@ -9,7 +9,7 @@ if (!isset($_SESSION['username'])) {
 $username = $_SESSION['username'];
 use RabbitMQ\RabbitMQClient;
 
-$client = new RabbitMQClient(__DIR__ . '/../../rabbitmqphp_example/RabbitMQ/RabbitMQ.ini', 'Database');
+$client = new RabbitMQClient(__DIR__ . '/../../RabbitMQ/RabbitMQ.ini', 'Database');
 
 $balance_request = json_encode([
     'action' => 'get_balance',

@@ -36,7 +36,15 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
 function fetchCryptoData() {
-    fetch("https://api.coincap.io/v2/assets")
+    fetch("http://localhost/webserver/dbCryptoCall.php", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            action: "getTop100Crypto"
+        })
+    })
         .then(response => response.json())
         .then(data => {
             coinsData = data.data;

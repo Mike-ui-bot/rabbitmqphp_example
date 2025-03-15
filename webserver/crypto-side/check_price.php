@@ -1,13 +1,16 @@
 <?php
-require_once(__DIR__ . '/../../rabbitmqphp_example/RabbitMQ/RabbitMQLib.inc');
+require_once(__DIR__ . '/../../RabbitMQ/RabbitMQLib.inc');
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 use RabbitMQ\RabbitMQClient;
-require '/var/www/rabbitmqphp_example/vendor/autoload.php';
+require '/var/www/test/vendor/autoload.php';
+
+echo "Starting script\n";
 
 // Function to send email via PHPMailer
 function send_email($email, $message) {
     $mail = new PHPMailer(true);
+    echo "Sending email...\n";
     try {
         $mail->isSMTP();
         $mail->Host       = 'smtp.gmail.com';
@@ -22,41 +25,60 @@ function send_email($email, $message) {
         $mail->Subject = 'Crypto Alert';
         $mail->Body    = $message;
         $mail->send();
+
+        if ($mail->send()) {
+            echo "Email sent!\n";
+        } else {
+            echo "Email not sent\n";
+        }
     } catch (Exception $e) {
         error_log("Email error: {$mail->ErrorInfo}");
+        return false;
     }
 }
 
 // Function to monitor price change
-function check_price_change($coin_symbol, $email) {
-    $client = new RabbitMQClient(__DIR__ . '/../../rabbitmqphp_example/RabbitMQ/RabbitMQ.ini', 'Database');
-    $old_price = null;
-    $attempts = 5;
+function check_price_change($symbol, $email) {
+    echo "Testing...\n";
+    $client = new RabbitMQClient(__DIR__ . '/../../RabbitMQ/RabbitMQ.ini', 'Database');
 
-    while ($attempts > 0) {
-        $request = ['action' => 'get_coin_price', 'coin_symbol' => $coin_symbol];
-        $response = $client->send_request($request);
+    $request = ['action' => 'get_coin_price', 'symbol' => $symbol, 'email' => $email];
+    $response = json_decode($client->sendRequest($request), true);
 
-        if ($response && isset($response['price'])) {
+    // troubleshooting
+    if (!$response) {
+        echo "Failed to decode response\n";
+        //var_dump($client->sendRequest($request));
+        return;
+    }
+
+    if ($response && isset($response['price'])) {
+        if ($response['price_changed']) {
+            $old_price = $response['old_price'];
             $new_price = $response['price'];
-            if ($old_price !== null && $old_price != $new_price) {
-                $message = "The price of $coin_symbol changed from $old_price to $new_price.<br>";
-                $message .= "Market Cap: {$response['market_cap']}<br>";
-                $message .= "Supply: {$response['supply']}<br>Max Supply: {$response['max_supply']}<br>";
-                $message .= "24h Volume: {$response['volume']}<br>Change (24h): {$response['change_percent']}%<br>";
-                $message .= "Last Updated: {$response['last_updated']}";
-                send_email($email, $message);
-                return;
-            }
-            $old_price = $new_price;
+
+            $message = "The price of $symbol changed from $old_price to $new_price.<br>";
+            $message .= "Market Cap: {$response['market_cap']}<br>";
+            $message .= "Supply: {$response['supply']}<br>Max Supply: {$response['max_supply']}<br>";
+            $message .= "24h Volume: {$response['volume']}<br>Change (24h): {$response['change_percent']}%<br>";
+            $message .= "Last Updated: {$response['last_updated']}";
+    
+            send_email($email, $message);
+            echo "Email sent!\n";   
+        } else {
+            echo "No price change for $symbol.\n"; // Don't send email
         }
-        sleep(60); // Wait 1 minute before checking again
-        $attempts--;
+    } else {
+        echo "Failed to retrieve price for $symbol\n";
+        //var_dump($response);
     }
 }
 
 // Ensure script runs only when executed from CLI with arguments
 if (isset($argv[1]) && isset($argv[2])) {
     check_price_change($argv[1], $argv[2]);
+} else {
+    echo "Please enter the coin symbol and email as arguments\n";
+    echo "Example: php check_price.php BTC test@email.com\n";
 }
 

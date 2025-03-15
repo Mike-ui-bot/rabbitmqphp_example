@@ -22,7 +22,7 @@ if (!isset($request['action'])) {
     exit();
 }
 
-// Send the request to the DB handler
+// Send the request to the DMZ handler
 $response = $client->sendRequest($request);
 
 echo $response;

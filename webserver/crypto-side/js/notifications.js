@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", function () {
-    const coinInput = document.getElementById("coin_symbol");  // Assuming you have an input field with id 'coin_symbol'
+    const coinInput = document.getElementById("symbol");  // Assuming you have an input field with id 'coin_symbol'
     const suggestionsBox = document.getElementById("suggestions");  // Assuming you have a div with id 'suggestions' for suggestions
 
     fetchCryptoData();
@@ -17,7 +17,15 @@ document.addEventListener("DOMContentLoaded", function () {
 let coinsData = [];
 
 function fetchCryptoData() {
-    fetch("https://api.coincap.io/v2/assets")
+    fetch("http://localhost/webserver/dbCryptoCall.php", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            action: "getTop100Crypto"
+        })
+    })
         .then(response => response.json())
         .then(data => {
             coinsData = data.data;
@@ -53,7 +61,7 @@ function displaySuggestions(coins) {
 }
 
 function selectCoin(coin) {
-    const coinInput = document.getElementById("coin_symbol");
+    const coinInput = document.getElementById("symbol");
     coinInput.value = `${coin.name} (${coin.symbol})`;
     document.getElementById("suggestions").innerHTML = '';  // Clear suggestions after selection
 }

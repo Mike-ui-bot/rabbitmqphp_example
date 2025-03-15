@@ -28,9 +28,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
 let coinsData = [];
 
-// Shows top 100 crypto data from CoinCap API
+// Shows top 100 crypto data from DB
 function fetchCryptoData() {
-    fetch("http://localhost/dbCryptoCall.php", {
+    fetch("http://localhost/webserver/dbCryptoCall.php", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
@@ -106,8 +106,20 @@ function updateWatchlist(coins) {
         });
     }
 }
+
+// Get additional data about specific coin, not stored in DB
 function fetchCoinDetails(coinId, coinName) {
-    fetch(`https://api.coincap.io/v2/assets/${coinId}`)
+    fetch("http://localhost/webserver/dmzCryptoCall.php", { 
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        // API URL is dynamic; depends on what coin you want to view
+        body: JSON.stringify({
+            action: "getCoinDetails",
+            coinId: coinId,
+        })
+    })
         .then(response => response.json())
         .then(data => {
             if (!data || !data.data) {
@@ -131,8 +143,21 @@ function fetchCoinDetails(coinId, coinName) {
             alert("Could not fetch coin details: " + error.message); // Optional: User feedback
         });
 }
+
+// Call API via DMZ to show 1 year historical data
 function fetchCoinHistory(coinId, coinName) {
-    fetch(`https://api.coincap.io/v2/assets/${coinId}/history?interval=d1`)
+    fetch("http://localhost/webserver/dmzCryptoCall.php", { 
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        // API URL is dynamic; depends on what coin you want to view
+        body: JSON.stringify({
+            action: "getCoinHistory",
+            coinId: coinId,
+            interval: "d1"
+        })
+    })
         .then(response => response.json())
         .then(data => {
             if (!data || !data.data) {

@@ -11,11 +11,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
     exit();
 }
 
-require_once(__DIR__ . '/../rabbitmqphp_example/RabbitMQ/RabbitMQLib.inc');
+require_once(__DIR__ . '/../RabbitMQ/RabbitMQLib.inc');
 use RabbitMQ\RabbitMQClient;
 
 // Script for retrieving crypto data from the DB (NOT THE DMZ)
-$client = new RabbitMQClient(__DIR__ . '/../rabbitmqphp_example/RabbitMQ/RabbitMQ.ini', 'Database');
+$client = new RabbitMQClient(__DIR__ . '/../RabbitMQ/RabbitMQ.ini', 'Database');
 
 // Process incoming POST request
 $requestBody = file_get_contents("php://input");
@@ -38,4 +38,3 @@ $response = $client->sendRequest($request);
 
 echo $response;
 ?>
-

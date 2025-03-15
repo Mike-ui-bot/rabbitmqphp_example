@@ -6,7 +6,7 @@ require_once('/var/www/test/Database/databaseConnect.php');
 
 use RabbitMQ\RabbitMQClient;
 
-// Script for getting crypto data from the API via the DMZ
+// Script for getting crypto data from the API via the DMZ. Make sure dmz_handler.php is running
 
 // logging for cron: this script runs every 5 minutes. check the log file to confirm
 // USE ABSOLUTE PATH OR CRON WONT APPEND TO THE LOG FILE
@@ -39,7 +39,7 @@ try {
         foreach ($top100Crypto as $coin) {
             $coinData = json_encode($coin);
 
-            $stmt = $db->prepare("INSERT INTO stocks (asset_id, name, symbol, price, market_cap, supply, max_supply, volume, change_percent, data)
+            $stmt = $db->prepare("INSERT INTO crypto (asset_id, name, symbol, price, market_cap, supply, max_supply, volume, change_percent, data)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON DUPLICATE KEY UPDATE
                 name = VALUES(name), symbol = VALUES(symbol), price = VALUES(price), market_cap = VALUES(market_cap),

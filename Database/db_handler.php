@@ -2,10 +2,8 @@
 require_once __DIR__ . '/../RabbitMQ/RabbitMQLib.inc';
 require_once 'databaseConnect.php';
 
-
 use RabbitMQ\RabbitMQServer;
 use PhpAmqpLib\Message\AMQPMessage;
-
 
 try {
     global $db;
@@ -147,35 +145,6 @@ try {
 
                         $response = ["status" => "success", "balance" => $balance];
                     } break;
-                case "get_coin_price":
-    $coin_symbol = $data['coin_symbol'];
-
-
-    // Fetch coin price from the crypto table
-    $stmt = $db->prepare("SELECT price, market_cap, supply, max_supply, volume, change_percent, last_updated FROM crypto WHERE coin_symbol = ?");
-    $stmt->bind_param("s", $coin_symbol);
-    $stmt->execute();
-    $stmt->bind_result($price, $market_cap, $supply, $max_supply, $volume, $change_percent, $last_updated);
-    $stmt->fetch();
-    $stmt->close();
-
-
-    if (!$price) {
-        $response = ["status" => "error", "message" => "Coin symbol '$coin_symbol' not found"];
-    } else {
-        $response = [
-            "status" => "success",
-            "price" => $price,
-            "market_cap" => $market_cap,
-            "supply" => $supply,
-            "max_supply" => $max_supply,
-            "volume" => $volume,
-            "change_percent" => $change_percent,
-            "last_updated" => $last_updated
-        ];
-    }
-    break;
-
 
                 // Add funds
                 case "add_funds":
@@ -444,6 +413,70 @@ try {
                     } else {
                         $response = ["status" => "error", "message" => "Failed to fetch top 100 cryptocurrencies from the database."];
                     } break;
+
+                // Email notifications everytime coin price changes (dependent on cron, so every 5 minutes in this case)
+                case "get_coin_price":
+                    $symbol = $data['symbol'];
+                
+                    // Fetch current price from the crypto table
+                    $stmt = $db->prepare("SELECT price, market_cap, supply, max_supply, volume, change_percent, last_updated FROM crypto WHERE symbol = ?");
+                    $stmt->bind_param("s", $symbol);
+                    $stmt->execute();
+                    $stmt->bind_result($price, $market_cap, $supply, $max_supply, $volume, $change_percent, $last_updated);
+                    $stmt->fetch();
+                    $stmt->close();
+                
+                    if (!$price) {
+                        $response = ["status" => "error", "message" => "Coin symbol '$symbol' not found"];
+                        break;
+                    }
+
+                    // Fetch last recorded price
+                    $stmt = $db->prepare("SELECT last_price FROM price_alerts WHERE coin_symbol = ?");
+                    $stmt->bind_param("s", $symbol);
+                    $stmt->execute();
+                    $stmt->bind_result($old_price);
+                    $stmt->fetch();
+                    $stmt->close();
+
+                    $price_changed = false;
+
+                    // Add the coin to price_alerts if it is not there
+                    if ($old_price === null) {
+                        $stmt = $db->prepare("INSERT INTO price_alerts (coin_symbol, last_price) VALUES (?, ?)");
+                        $stmt-> bind_param("sd", $symbol, $price);
+                        $stmt-> execute();
+                        $stmt->close();
+                        $old_price = $price;
+                    }
+                
+                    // Check if price has changed
+                    if ($old_price != $price) {
+                        $price_changed = true;
+
+                        // Update price_alerts with new price
+                        $stmt = $db->prepare("INSERT INTO price_alerts (coin_symbol, last_price) 
+                                              VALUES (?, ?) ON DUPLICATE KEY UPDATE last_price = ?");
+                        $stmt->bind_param("sdd", $symbol, $price, $price);
+                        $stmt->execute();
+                        $stmt->close();
+                    } else {
+                        echo "No price change detected for $symbol.\n";
+                    }
+                
+                    // Return response to RabbitMQ
+                    $response = [
+                        "status" => "success",
+                        "old_price" => $old_price,
+                        "price" => $price,
+                        "market_cap" => $market_cap,
+                        "supply" => $supply,
+                        "max_supply" => $max_supply,
+                        "volume" => $volume,
+                        "change_percent" => $change_percent,
+                        "last_updated" => $last_updated,
+                        "price_changed" => $price_changed
+                    ]; break;
                
                 default:
                     echo "Error: Unknown action '$action'.\n";
