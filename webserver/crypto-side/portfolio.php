@@ -16,6 +16,20 @@ use RabbitMQ\RabbitMQClient;
 $username = $_SESSION['username'];
 $client = new RabbitMQClient(__DIR__ . '/../../RabbitMQ/RabbitMQ.ini', 'Database');
 
+// Fetch crypto data from DB
+$crypto_request = json_encode([
+    'action' => 'getTop100Crypto',
+]);
+
+$crypto_response = json_decode($client->sendRequest($crypto_request), true);
+
+if ($crypto_response['status'] === 'success' && isset($crypto_response['data'])) {
+    $crypto = $crypto_response['data']; 
+} else {
+    echo "Error: Unable to fetch cryptocurrency data.";
+    exit();
+}
+
 // Fetch portfolio
 $portfolio_request = json_encode([
     'action' => 'get_portfolio',
@@ -88,12 +102,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_funds'])) {
         </thead>
         <tbody>
             <?php foreach ($portfolio as $coin): 
-                // Fetch live price from CoinCap API
-                $url = "https://api.coincap.io/v2/assets/" . strtolower($coin['coin_symbol']);
-                $response = @file_get_contents($url);
-                $data = $response ? json_decode($response, true) : null;
-                $current_price = $data['data']['priceUsd'] ?? 0;
-
+                foreach ($crypto as $crypto_data) {
+                    if (strtolower($coin['coin_symbol']) === strtolower($crypto_data['symbol'])) {
+                        $current_price = $crypto_data['priceUsd'];
+                        break; 
+                    }
+                }
                 $total_value = $coin['quantity'] * $current_price;
                 $gain_loss = ($current_price - $coin['average_price']) * $coin['quantity'];
                 $gain_loss_percentage = ($coin['average_price'] > 0) ? ($gain_loss / ($coin['average_price'] * $coin['quantity'])) * 100 : 0;
@@ -123,4 +137,3 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_funds'])) {
 
 </body>
 </html>
-
