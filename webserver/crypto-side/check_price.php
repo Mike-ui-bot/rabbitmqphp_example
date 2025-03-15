@@ -76,7 +76,16 @@ function check_price_change($symbol, $email) {
 
 // Ensure script runs only when executed from CLI with arguments
 if (isset($argv[1]) && isset($argv[2])) {
-    check_price_change($argv[1], $argv[2]);
+    $symbol = $argv[1];
+    $email = $argv[2];
+
+    while(true) {
+        $emailSent = check_price_change($symbol, $email);
+        if ($emailSent) {
+            break;
+        }
+        sleep(30);
+    }
 } else {
     echo "Please enter the coin symbol and email as arguments\n";
     echo "Example: php check_price.php BTC test@email.com\n";
