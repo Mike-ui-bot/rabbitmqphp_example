@@ -30,7 +30,7 @@ let coinsData = [];
 
 // Shows top 100 crypto data from CoinCap API
 function fetchCryptoData() {
-    fetch("http://localhost/webserver/dbCryptoCall.php", {
+    fetch("http://localhost/dbCryptoCall.php", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"

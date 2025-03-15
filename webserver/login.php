@@ -19,7 +19,7 @@ $hashed_password = hash("sha256", $password);
 
 // Prepare the request
 $message = json_encode([
-    'type' => 'login',
+    'action' => 'login',
     'email' => $email,
     'password' => $password
 ]);

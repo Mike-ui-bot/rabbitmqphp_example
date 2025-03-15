@@ -1,11 +1,14 @@
-/* General Styles */
+/* General Styles of all the pages (rss is using a different css file *TestyDashy* */
 body {
     font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
-    background-color: #f4f4f4;
-}
+    background-image: url('https://assets.euromoneydigital.com/dims4/default/cee9178/2147483647/strip/true/crop/800x450+0+20/resize/1200x675!/quality/90/?url=http%3A%2F%2Feuromoney-brightspot.s3.amazonaws.com%2Ffc%2F1c%2F8c6efc9a63666ed6bd5963e4b54f%2Fdigital.jpg');
+    background-size: cover;
+    background-position: center center;
+    background-attachment: fixed;
 
+}
 .navbar {
     background: #222;
     color: white;
@@ -14,15 +17,13 @@ body {
     justify-content: space-between;
     align-items: center;
 }
-
-/* Left side of navbar */
 .nav-left a {
     color: white;
     text-decoration: none;
     padding: 10px 15px;
 }
 
-/* Right side of navbar */
+
 .nav-right {
     display: flex;
     align-items: center;
@@ -32,7 +33,7 @@ body {
     font-weight: bold;
 }
 
-/* Logout button */
+
 .logout-btn {
     color: orange;
     text-decoration: none;
@@ -44,7 +45,7 @@ body {
 }
 
 
-/* Container */
+
 .container {
     width: 80%;
     margin: auto;
@@ -53,9 +54,18 @@ body {
     box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
     border-radius: 8px;
 }
+.balance-info{
+	width: 60%;
+	margin:auto;
+	background: white;
+	padding: 20px;
+	border-radius: 8px;
+	box-shadow: 0 0px 4px rgba(0, 0, 0, 0.1);
+	margin-top: 10px;
+	text-align: center;
+}
 
 
-/* Buttons */
 button {
     background: #28a745;
     color: white;
@@ -71,7 +81,7 @@ button:hover {
 }
 
 
-/* Tables */
+
 table {
     width: 100%;
     border-collapse: collapse;
@@ -91,7 +101,7 @@ th {
 }
 
 
-/* Modal for graph */
+
 #graphModal {
     position: fixed;
     top: 0;
@@ -120,15 +130,15 @@ th {
     cursor: pointer;
     font-size: 30px;
 }
-/* Highlight Promising Coin */
+
 .highlighted-coin {
-    background-color: #f8d7da; /* Light red background */
-    border-left: 5px solid #28a745; /* Green border to indicate it's promising */
+    background-color: #f8d7da;
+    border-left: 5px solid #28a745; 
     transition: background-color 0.3s ease, border-left 0.3s ease;
 }
 
 .highlighted-coin:hover {
-    background-color: #f1c4c4; /* Slightly darker when hovered */
+    background-color: #f1c4c4;
 }
 #coin-details {
     margin-top: 20px;
