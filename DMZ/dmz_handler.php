@@ -24,18 +24,27 @@ $server->consume(function($body, $properties, $channel) {
             $top100Crypto = array_slice($data['data'], 0, 100);
             return $top100Crypto;
 
+        case "getCoinDetails":
+            $coinId = $request['coinId'];                
+            $apiUrl = "https://api.coincap.io/v2/assets/{$coinId}";
+        
+            $response = file_get_contents($apiUrl);
+            $data = json_decode($response, true);
+        
+            return $data;
+
         case "getCoinHistory":
             $coinId = $request['coinId'];
             $interval = $request['interval'];
             $apiUrl = "https://api.coincap.io/v2/assets/{$coinId}/history?interval={$interval}";
-
+    
             $response = file_get_contents($apiUrl);
             $data = json_decode($response, true);
-
+    
             return $data;
         
         default:
-            return ["status" => "error", "message" => "Invalid action"];
+            return ["status" => "error", "message" => "Invalid request type"];
     }
 });
 ?>
