@@ -37,16 +37,14 @@ try {
         $top100Crypto = $response; 
 
         foreach ($top100Crypto as $coin) {
-            $coinData = json_encode($coin);
-
-            $stmt = $db->prepare("INSERT INTO crypto (asset_id, name, symbol, price, market_cap, supply, max_supply, volume, change_percent, data)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            $stmt = $db->prepare("INSERT INTO crypto (asset_id, name, symbol, price, market_cap, supply, max_supply, volume, change_percent)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON DUPLICATE KEY UPDATE
                 name = VALUES(name), symbol = VALUES(symbol), price = VALUES(price), market_cap = VALUES(market_cap),
                 supply = VALUES(supply), max_supply = VALUES(max_supply), volume = VALUES(volume),
-                change_percent = VALUES(change_percent), data = VALUES(data), last_updated = CURRENT_TIMESTAMP");
+                change_percent = VALUES(change_percent), last_updated = CURRENT_TIMESTAMP");
 
-            $stmt->bind_param("ssssssssss", 
+            $stmt->bind_param("sssssssss", 
                 $coin['id'], 
                 $coin['name'], 
                 $coin['symbol'], 
@@ -56,7 +54,6 @@ try {
                 $coin['maxSupply'], 
                 $coin['volumeUsd24Hr'], 
                 $coin['changePercent24Hr'], 
-                $coinData
             );
 
             if (!$stmt->execute()) {
